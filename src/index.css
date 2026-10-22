@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  /* Mock-up ke asal rang */
+  --color-primary: #E8571A;
+  --color-primary-hover: #C8460F;
+  --color-primary-subtle: #FDEDE4;
+  --color-secondary: #1A2B4A;
+  --color-gold: #B8963E;
+  --color-page: #F8FAFC;
+  --color-surface-2: #F1F5F9;
+  --color-line: #E5E7EB;
+  --color-line-strong: #CBD5E1;
+  --color-ink: #1A2B4A;
+  --color-dim: #475569;
+  --color-muted: #94A3B8;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+  --color-info: #2563EB;
+  --color-whatsapp: #25D366;
+
+  /* Purane naam (taake purana code na toote) */
+  --color-navy-900: #1A2B4A;
+  --color-navy-700: #1A2B4A;
+  --color-navy-50: #F1F5F9;
+  --color-accent: #E8571A;
+  --color-accent-50: #FDEDE4;
+  --color-wa-out: #DCF8C6;
+  --color-wa-bg: #ECE5DD;
+}
+
+body {
+  background-color: var(--color-page);
+  color: var(--color-ink);
+  font-family: 'Inter', system-ui, sans-serif;
+}
