@@ -9,7 +9,8 @@ import StatusBadge from '../StatusBadge'
 //        actionLabel / actionTo = the button on the right (e.g. "View quote")
 export default function ThreadHeader({ customer, phone, status, actionLabel, actionTo }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-line bg-white px-4 py-3 sm:px-5">
+    // shrink-0 = this part never gets squashed when the chat is short
+    <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-white px-4 py-3 sm:px-5">
       <Avatar name={customer} />
 
       <div className="min-w-0 flex-1">

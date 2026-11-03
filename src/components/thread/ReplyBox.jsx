@@ -38,7 +38,7 @@ export default function ReplyBox({ onSend, values, templateType = 'quote' }) {
   }
 
   return (
-    <div className="border-t border-line bg-white">
+    <div className="shrink-0 border-t border-line bg-white">
       {/* Template chips: clicking one puts its text in the box (you can still edit it) */}
       <div className="flex gap-2 overflow-x-auto px-3 pt-3">
         {shownTemplates.map((t) => (

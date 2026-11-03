@@ -1,19 +1,28 @@
 // The Quote Thread screen (route: /inbox/quotes/:id).
 // Shows the chat of ONE quote and lets Ali reply.
-import { useState } from 'react'
+// The page itself does not scroll: header and reply box stay in place,
+// only the messages area scrolls.
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { threads } from '../data/threads'
 import { friendlyName } from '../utils/friendlyName'
+import { useConversations } from '../context/ConversationsContext'
 import BackButton from '../components/BackButton'
 import ThreadHeader from '../components/thread/ThreadHeader'
 import MessageList from '../components/thread/MessageList'
 import ReplyBox from '../components/thread/ReplyBox'
-import EmptyState from '../components/inbox/EmptyState'
+import ThreadNotFound from '../components/thread/ThreadNotFound'
 
 // The real chat. Separate component so messages reset when another quote is opened.
 function ThreadView({ id, thread }) {
   // STATE: the list of messages, starting from the dummy data
   const [messages, setMessages] = useState(thread.messages)
+
+  // Opening the chat counts as reading it: its unread dot disappears everywhere
+  const { markRead } = useConversations()
+  useEffect(() => {
+    markRead(Number(id))
+  }, [id, markRead])
 
   // The quote card and the "View quote" button open Group 1's Quote Preview
   const previewLink = `/quotes/${id}/preview`
@@ -28,13 +37,16 @@ function ThreadView({ id, thread }) {
   }
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-2">
+    // flex-1 = take all the height of the page area. min-h-[30rem] = on a very
+    // short screen the page area scrolls instead of squashing the chat.
+    <div className="flex min-h-[30rem] flex-1 flex-col p-4 sm:p-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+        <div className="mb-2 shrink-0">
           <BackButton />
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+        {/* The chat card: fills the rest of the height; only the messages scroll inside it */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm">
           <ThreadHeader
             customer={thread.customer}
             phone={thread.phone}
@@ -62,18 +74,7 @@ export default function QuoteThread() {
 
   // No such quote (or it is not a quote): show a friendly message
   if (!thread || thread.type !== 'quote') {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-2">
-            <BackButton />
-          </div>
-          <div className="rounded-lg border border-line bg-white shadow-sm">
-            <EmptyState message="This quote conversation was not found." />
-          </div>
-        </div>
-      </div>
-    )
+    return <ThreadNotFound message="This quote conversation was not found." />
   }
 
   // key={id} starts a fresh ThreadView for each quote

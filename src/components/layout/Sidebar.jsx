@@ -1,6 +1,7 @@
 // Left navy sidebar (desktop only). Matches the mock-up.
 // To change a menu item, edit the lists below.
 import { NavLink } from 'react-router-dom'
+import { useConversations } from '../../context/ConversationsContext'
 import {
   Wrench, Home, Mic, Briefcase, CalendarDays, FileText,
    ShieldCheck, MessageCircle, Settings,
@@ -36,7 +37,7 @@ function MenuItem({ item }) {
       <Icon size={20} />
       <span className="flex-1">{item.label}</span>
       {/* Orange number badge, only if the item has one */}
-      {item.badge && (
+      {item.badge > 0 && (
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-bold text-navy-900">
           {item.badge}
         </span>
@@ -46,6 +47,9 @@ function MenuItem({ item }) {
 }
 
 export default function Sidebar() {
+    // The number on the WhatsApp Inbox menu is the real number of unread chats
+  const { conversations } = useConversations()
+  const unread = conversations.filter((c) => c.unread > 0).length
   return (
     // "hidden md:flex" = hidden on phones, visible from medium screens up
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-navy-900 md:flex">
@@ -60,7 +64,12 @@ export default function Sidebar() {
       {/* Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         <p className="px-6 pb-2 text-xs font-semibold tracking-wider text-white/40">WORKSPACE</p>
-        {workspace.map((item) => <MenuItem key={item.to} item={item} />)}
+        {workspace.map((item) => (
+          <MenuItem
+            key={item.to}
+            item={item.to === '/inbox' ? { ...item, badge: unread } : item}
+          />
+        ))}
 
         <p className="px-6 pb-2 pt-6 text-xs font-semibold tracking-wider text-white/40">ACCOUNT</p>
         {account.map((item) => <MenuItem key={item.to} item={item} />)}

@@ -1,4 +1,5 @@
 // The bell icon and its dropdown list of notifications.
+// Clicking one notification opens its page and marks only that one as read.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
@@ -6,12 +7,16 @@ import HeaderMenu from './HeaderMenu'
 import { notifications as startData } from '../../data/notifications'
 
 export default function NotificationsMenu() {
-  // STATE: the list, so "Mark all as read" can change it
+  // STATE: the list, so reading changes it
   const [items, setItems] = useState(startData)
   const unread = items.filter((n) => n.unread).length
 
+  function markOneRead(id) {
+    setItems((list) => list.map((n) => (n.id === id ? { ...n, unread: false } : n)))
+  }
+
   function markAllRead() {
-    setItems(items.map((n) => ({ ...n, unread: false })))
+    setItems((list) => list.map((n) => ({ ...n, unread: false })))
   }
 
   return (
@@ -38,6 +43,7 @@ export default function NotificationsMenu() {
           <Link
             key={n.id}
             to={n.to}
+            onClick={() => markOneRead(n.id)}
             className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-b-0 ${
               n.unread ? 'bg-accent-50' : 'hover:bg-navy-50'
             }`}

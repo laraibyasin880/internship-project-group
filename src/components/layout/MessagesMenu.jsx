@@ -1,16 +1,22 @@
-// The chat icon and its dropdown showing the latest conversations.
-// It reuses the same data as the Inbox, so both always agree.
+// The chat icon and its dropdown showing the chats (unread ones first).
+// It reads the same shared list as the Inbox, so both always agree.
+// Clicking a chat opens it and marks it as read, so its dot disappears.
 import { Link } from 'react-router-dom'
 import { MessageSquare } from 'lucide-react'
 import HeaderMenu from './HeaderMenu'
 import Avatar from '../inbox/Avatar'
+import UnreadDot from '../inbox/UnreadDot'
 import { getLink } from '../inbox/ChatRow'
-import { conversations } from '../../data/conversations'
+import { useConversations } from '../../context/ConversationsContext'
 
 export default function MessagesMenu() {
+  const { conversations, markRead } = useConversations()
   const unread = conversations.filter((c) => c.unread > 0).length
-  // The data is newest first, so the first 5 are the latest chats
-  const latest = conversations.slice(0, 5)
+
+  // Unread chats first (sort keeps the original order inside each group), then take 5
+  const latest = [...conversations]
+    .sort((a, b) => (b.unread > 0) - (a.unread > 0))
+    .slice(0, 5)
 
   return (
     <HeaderMenu
@@ -23,6 +29,7 @@ export default function MessagesMenu() {
         <Link
           key={c.id}
           to={getLink(c)}
+          onClick={() => markRead(c.id)}
           className={`flex items-center gap-3 border-b border-line px-4 py-3 ${
             c.unread > 0 ? 'bg-accent-50' : 'hover:bg-navy-50'
           }`}
@@ -32,7 +39,10 @@ export default function MessagesMenu() {
             <p className="truncate text-sm font-semibold text-ink">{c.customer}</p>
             <p className="truncate text-sm text-muted">{c.lastMessage}</p>
           </div>
-          <span className="shrink-0 text-xs text-muted">{c.time}</span>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <span className="text-xs text-muted">{c.time}</span>
+            {c.unread > 0 ? <UnreadDot /> : <span className="h-2.5" />}
+          </div>
         </Link>
       ))}
 

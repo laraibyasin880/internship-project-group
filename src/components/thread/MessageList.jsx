@@ -1,4 +1,5 @@
 // The scrolling area with the WhatsApp wallpaper that holds all the bubbles.
+// It takes all the space left in the chat card, and only THIS area scrolls.
 // When a new message is added, it scrolls down to the newest one.
 import { useEffect, useRef } from 'react'
 import MessageBubble from './MessageBubble'
@@ -16,7 +17,7 @@ export default function MessageList({ messages, cardTo }) {
   return (
     <div
       ref={boxRef}
-      className="flex max-h-[55vh] min-h-72 flex-col gap-2 overflow-y-auto bg-wa-bg p-4 sm:p-5"
+      className="flex min-h-40 flex-1 flex-col gap-2 overflow-y-auto bg-wa-bg p-4 sm:p-5"
     >
       {messages.map((m) => (
         <MessageBubble key={m.id} message={m} cardTo={cardTo} />
