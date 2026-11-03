@@ -1,12 +1,13 @@
 // The Invoice Thread screen (route: /inbox/invoices/:id).
 // Shows the chat of ONE invoice, its payment status and link, and lets Ali
 // send a reminder or reply.
+// The chat comes from the server: GET /api/threads/:id (see hooks/useThread.js)
 // The page itself does not scroll: header, payment strip, buttons and reply box
 // stay in place, only the messages area scrolls.
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { BellRing, Clock } from 'lucide-react'
-import { threads } from '../data/threads'
+import { useThread } from '../hooks/useThread'
 import { friendlyName } from '../utils/friendlyName'
 import { useConversations } from '../context/ConversationsContext'
 import BackButton from '../components/BackButton'
@@ -23,7 +24,7 @@ function nowTime() {
 
 // The real chat. Separate component so messages reset when another invoice is opened.
 function ThreadView({ id, thread }) {
-  // STATE: the list of messages, starting from the dummy data
+  // STATE: the list of messages, starting from what the server sent
   const [messages, setMessages] = useState(thread.messages)
 
   // Opening the chat counts as reading it: its unread dot disappears everywhere
@@ -42,6 +43,7 @@ function ThreadView({ id, thread }) {
   const chaseLink = `/inbox/chase/${id}`    // G2-S2: Payment Chase Sequence
 
   // Adds Ali's own typed message (one grey tick = sent)
+  // (For now only on the screen. Saving on the server comes in the next step.)
   function handleSend(text) {
     setMessages([
       ...messages,
@@ -50,6 +52,7 @@ function ThreadView({ id, thread }) {
   }
 
   // Sends a ready-made reminder with the payment link, plus a grey note in the chat
+  // (For now only on the screen. Saving on the server comes later.)
   function handleReminder() {
     const link = `${window.location.origin}${payPath}`
     const when =
@@ -123,7 +126,33 @@ function ThreadView({ id, thread }) {
 export default function InvoiceThread() {
   // useParams reads the :id from the address (/inbox/invoices/2 gives id = "2")
   const { id } = useParams()
-  const thread = threads[id]
+  const { thread, loading, error } = useThread(id)
+
+  // Waiting for the server
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto max-w-3xl">
+          <BackButton />
+          <p className="mt-4 text-sm text-muted">Loading chat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // The server is down or something went wrong
+  if (error === 'failed') {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto max-w-3xl">
+          <BackButton />
+          <p role="alert" className="mt-4 text-sm font-semibold text-danger">
+            Could not load this chat. Please check that the server is running.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // No such invoice (or it is not an invoice): show a friendly message
   if (!thread || thread.type !== 'invoice') {

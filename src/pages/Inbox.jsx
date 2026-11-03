@@ -1,6 +1,7 @@
 // The Inbox screen (route: /inbox), shown as "WhatsApp Hub" like the mock-up.
 // The selected tab and the search text live in the address (?tab=...&q=...),
 // so after opening a chat and coming Back, the same tab and search are still selected.
+// The chats come from the server (see ConversationsContext).
 import { Link, useSearchParams } from 'react-router-dom'
 import { FileText } from 'lucide-react'
 import { useConversations } from '../context/ConversationsContext'
@@ -15,8 +16,9 @@ function simplify(text) {
 }
 
 export default function Inbox() {
-  // The shared list (it changes when a chat is read or starred)
-  const { conversations } = useConversations()
+  // The shared list (it changes when a chat is read or starred),
+  // plus loading (waiting for the server) and error (server problem)
+  const { conversations, loading, error } = useConversations()
 
   const [params, setParams] = useSearchParams()
   const filter = params.get('tab') || 'all'
@@ -68,7 +70,9 @@ export default function Inbox() {
           <div>
             <h1 className="text-2xl font-bold text-navy-700">WhatsApp Hub</h1>
             <p className="text-sm text-muted">
-              {conversations.length} conversations · {unreadCount} unread
+              {loading
+                ? 'Loading...'
+                : `${conversations.length} conversations · ${unreadCount} unread`}
             </p>
           </div>
 
@@ -84,7 +88,13 @@ export default function Inbox() {
         <FilterTabs active={filter} onChange={changeTab} counts={counts} />
 
         <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
-          {shown.length === 0 ? (
+          {loading ? (
+            <p className="p-6 text-center text-sm text-muted">Loading conversations...</p>
+          ) : error ? (
+            <p role="alert" className="p-6 text-center text-sm font-semibold text-danger">
+              {error}
+            </p>
+          ) : shown.length === 0 ? (
             <EmptyState message={emptyMessage} />
           ) : (
             shown.map((c) => <ChatRow key={c.id} chat={c} />)

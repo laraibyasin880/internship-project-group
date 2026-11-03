@@ -1,10 +1,11 @@
 // The Quote Thread screen (route: /inbox/quotes/:id).
 // Shows the chat of ONE quote and lets Ali reply.
+// The chat comes from the server: GET /api/threads/:id (see hooks/useThread.js)
 // The page itself does not scroll: header and reply box stay in place,
 // only the messages area scrolls.
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { threads } from '../data/threads'
+import { useThread } from '../hooks/useThread'
 import { friendlyName } from '../utils/friendlyName'
 import { useConversations } from '../context/ConversationsContext'
 import BackButton from '../components/BackButton'
@@ -15,7 +16,7 @@ import ThreadNotFound from '../components/thread/ThreadNotFound'
 
 // The real chat. Separate component so messages reset when another quote is opened.
 function ThreadView({ id, thread }) {
-  // STATE: the list of messages, starting from the dummy data
+  // STATE: the list of messages, starting from what the server sent
   const [messages, setMessages] = useState(thread.messages)
 
   // Opening the chat counts as reading it: its unread dot disappears everywhere
@@ -31,6 +32,7 @@ function ThreadView({ id, thread }) {
   const amount = thread.messages.find((m) => m.card)?.card.total || ''
 
   // Adds Ali's new message to the end of the list (one grey tick = sent)
+  // (For now it is only added on the screen. Saving it on the server comes in the next step.)
   function handleSend(text) {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     setMessages([...messages, { id: Date.now(), from: 'tradesperson', text, time, ticks: 'sent' }])
@@ -70,7 +72,33 @@ function ThreadView({ id, thread }) {
 export default function QuoteThread() {
   // useParams reads the :id from the address (/inbox/quotes/1 gives id = "1")
   const { id } = useParams()
-  const thread = threads[id]
+  const { thread, loading, error } = useThread(id)
+
+  // Waiting for the server
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto max-w-3xl">
+          <BackButton />
+          <p className="mt-4 text-sm text-muted">Loading chat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // The server is down or something went wrong
+  if (error === 'failed') {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto max-w-3xl">
+          <BackButton />
+          <p role="alert" className="mt-4 text-sm font-semibold text-danger">
+            Could not load this chat. Please check that the server is running.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // No such quote (or it is not a quote): show a friendly message
   if (!thread || thread.type !== 'quote') {
