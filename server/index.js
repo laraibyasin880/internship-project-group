@@ -4,6 +4,7 @@ import express from 'express'
 import cors from 'cors'
 import conversationsRouter from './routes/conversations.js'
 import threadsRouter from './routes/threads.js'
+import invoicesRouter from './routes/invoices.js'
 
 const app = express()
 const PORT = 5000
@@ -22,6 +23,9 @@ app.use('/api/conversations', conversationsRouter)
 
 // Every URL that starts with /api/threads goes to routes/threads.js
 app.use('/api/threads', threadsRouter)
+
+// Every URL that starts with /api/invoices goes to routes/invoices.js
+app.use('/api/invoices', invoicesRouter)
 
 // Start the server
 app.listen(PORT, () => {

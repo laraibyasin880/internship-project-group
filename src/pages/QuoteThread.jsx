@@ -1,11 +1,13 @@
 // The Quote Thread screen (route: /inbox/quotes/:id).
 // Shows the chat of ONE quote and lets Ali reply.
 // The chat comes from the server: GET /api/threads/:id (see hooks/useThread.js)
+// A new message is saved on the server: POST /api/threads/:id/messages
 // The page itself does not scroll: header and reply box stay in place,
 // only the messages area scrolls.
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useThread } from '../hooks/useThread'
+import { postMessage } from '../api/threads'
 import { friendlyName } from '../utils/friendlyName'
 import { useConversations } from '../context/ConversationsContext'
 import BackButton from '../components/BackButton'
@@ -16,11 +18,13 @@ import ThreadNotFound from '../components/thread/ThreadNotFound'
 
 // The real chat. Separate component so messages reset when another quote is opened.
 function ThreadView({ id, thread }) {
-  // STATE: the list of messages, starting from what the server sent
+  // STATE: the list of messages (from the server) and a send error text
   const [messages, setMessages] = useState(thread.messages)
+  const [sendError, setSendError] = useState('')
 
-  // Opening the chat counts as reading it: its unread dot disappears everywhere
-  const { markRead } = useConversations()
+  // Opening the chat counts as reading it: its unread dot disappears everywhere.
+  // reload = asks the server for a fresh chat list (so the Inbox shows the new last message).
+  const { markRead, reload } = useConversations()
   useEffect(() => {
     markRead(Number(id))
   }, [id, markRead])
@@ -31,11 +35,16 @@ function ThreadView({ id, thread }) {
   // The amount for templates comes from the first message that has a quote card
   const amount = thread.messages.find((m) => m.card)?.card.total || ''
 
-  // Adds Ali's new message to the end of the list (one grey tick = sent)
-  // (For now it is only added on the screen. Saving it on the server comes in the next step.)
-  function handleSend(text) {
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    setMessages([...messages, { id: Date.now(), from: 'tradesperson', text, time, ticks: 'sent' }])
+  // Saves Ali's message on the server, then shows it in the chat (one grey tick = sent)
+  async function handleSend(text) {
+    try {
+      const saved = await postMessage(id, text)
+      setMessages((list) => [...list, saved])
+      setSendError('')
+      reload()
+    } catch {
+      setSendError('Could not send the message. Please check that the server is running.')
+    }
   }
 
   return (
@@ -58,6 +67,12 @@ function ThreadView({ id, thread }) {
           />
 
           <MessageList messages={messages} cardTo={previewLink} />
+
+          {sendError && (
+            <p role="alert" className="shrink-0 px-4 py-2 text-sm font-semibold text-danger">
+              {sendError}
+            </p>
+          )}
 
           <ReplyBox
             onSend={handleSend}

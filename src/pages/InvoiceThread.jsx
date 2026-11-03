@@ -2,12 +2,14 @@
 // Shows the chat of ONE invoice, its payment status and link, and lets Ali
 // send a reminder or reply.
 // The chat comes from the server: GET /api/threads/:id (see hooks/useThread.js)
+// Messages and reminders are saved on the server (see api/threads.js).
 // The page itself does not scroll: header, payment strip, buttons and reply box
 // stay in place, only the messages area scrolls.
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { BellRing, Clock } from 'lucide-react'
 import { useThread } from '../hooks/useThread'
+import { postMessage, postReminder } from '../api/threads'
 import { friendlyName } from '../utils/friendlyName'
 import { useConversations } from '../context/ConversationsContext'
 import BackButton from '../components/BackButton'
@@ -17,18 +19,15 @@ import MessageList from '../components/thread/MessageList'
 import ReplyBox from '../components/thread/ReplyBox'
 import ThreadNotFound from '../components/thread/ThreadNotFound'
 
-// Current time like "09:41 AM"
-function nowTime() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
 // The real chat. Separate component so messages reset when another invoice is opened.
 function ThreadView({ id, thread }) {
-  // STATE: the list of messages, starting from what the server sent
+  // STATE: the list of messages (from the server) and a send error text
   const [messages, setMessages] = useState(thread.messages)
+  const [sendError, setSendError] = useState('')
 
-  // Opening the chat counts as reading it: its unread dot disappears everywhere
-  const { markRead } = useConversations()
+  // Opening the chat counts as reading it: its unread dot disappears everywhere.
+  // reload = asks the server for a fresh chat list (so the Inbox shows the new last message).
+  const { markRead, reload } = useConversations()
   useEffect(() => {
     markRead(Number(id))
   }, [id, markRead])
@@ -42,18 +41,21 @@ function ThreadView({ id, thread }) {
   const payPath = `/pay/${id}`              // G2-S6: Customer Payment Portal
   const chaseLink = `/inbox/chase/${id}`    // G2-S2: Payment Chase Sequence
 
-  // Adds Ali's own typed message (one grey tick = sent)
-  // (For now only on the screen. Saving on the server comes in the next step.)
-  function handleSend(text) {
-    setMessages([
-      ...messages,
-      { id: Date.now(), from: 'tradesperson', text, time: nowTime(), ticks: 'sent' },
-    ])
+  // Saves Ali's own typed message on the server, then shows it (one grey tick = sent)
+  async function handleSend(text) {
+    try {
+      const saved = await postMessage(id, text)
+      setMessages((list) => [...list, saved])
+      setSendError('')
+      reload()
+    } catch {
+      setSendError('Could not send the message. Please check that the server is running.')
+    }
   }
 
-  // Sends a ready-made reminder with the payment link, plus a grey note in the chat
-  // (For now only on the screen. Saving on the server comes later.)
-  function handleReminder() {
+  // Sends a ready-made reminder with the payment link.
+  // The server saves it and also adds a grey note in the chat.
+  async function handleReminder() {
     const link = `${window.location.origin}${payPath}`
     const when =
       thread.status === 'Overdue'
@@ -61,12 +63,14 @@ function ThreadView({ id, thread }) {
         : `is due on ${invoice.dueDate}`
     const text = `Hi ${name}, just a reminder that invoice ${invoice.ref} for ${invoice.total} ${when}. You can pay here: ${link}`
 
-    const stamp = Date.now()
-    setMessages([
-      ...messages,
-      { id: stamp, from: 'system', text: 'Manual reminder sent' },
-      { id: stamp + 1, from: 'tradesperson', text, time: nowTime(), ticks: 'sent' },
-    ])
+    try {
+      const saved = await postReminder(id, text) // [grey note, reminder message]
+      setMessages((list) => [...list, ...saved])
+      setSendError('')
+      reload()
+    } catch {
+      setSendError('Could not send the reminder. Please check that the server is running.')
+    }
   }
 
   return (
@@ -91,6 +95,12 @@ function ThreadView({ id, thread }) {
           <PaymentSummary invoice={invoice} status={thread.status} payPath={payPath} />
 
           <MessageList messages={messages} cardTo={detailLink} />
+
+          {sendError && (
+            <p role="alert" className="shrink-0 px-4 py-2 text-sm font-semibold text-danger">
+              {sendError}
+            </p>
+          )}
 
           {/* Action buttons: reminder and chase sequence */}
           <div className="flex shrink-0 flex-wrap gap-2 border-t border-line bg-white px-3 py-3">

@@ -73,7 +73,7 @@ export function ConversationsProvider({ children }) {
 
   return (
     <ConversationsContext.Provider
-      value={{ conversations, loading, error, markRead, toggleStar }}
+           value={{ conversations, loading, error, markRead, toggleStar, reload: loadConversations }}
     >
       {children}
     </ConversationsContext.Provider>
