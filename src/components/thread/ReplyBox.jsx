@@ -1,7 +1,11 @@
 // The bottom area: round template chips, a text box and a round Send button.
-import { useState } from 'react'
+// The templates come from the server: GET /api/templates?type=quote|invoice
+import { useEffect, useState } from 'react'
 import { Send } from 'lucide-react'
-import { templates } from '../../data/templates'
+import { getTemplates } from '../../api/templates'
+
+// These two templates make no sense when the invoice is already paid.
+const UNPAID_ONLY = ['Payment reminder', 'Overdue notice']
 
 // Replaces the placeholders in a template with real values.
 function fillTemplate(text, values) {
@@ -15,12 +19,38 @@ function fillTemplate(text, values) {
 //   onSend       = function called with the message text
 //   values       = { customerName, amount, dueDate } used to fill the templates
 //   templateType = 'quote' or 'invoice' (which templates to show). Default: 'quote'
-export default function ReplyBox({ onSend, values, templateType = 'quote' }) {
-  // STATE: the text typed in the box
+//   isPaid       = true when the invoice is already paid (hides the reminder templates)
+export default function ReplyBox({ onSend, values, templateType = 'quote', isPaid = false }) {
+  // STATE: the text typed in the box, the templates from the server, and an error text
   const [text, setText] = useState('')
+  const [templates, setTemplates] = useState([])
+  const [templatesError, setTemplatesError] = useState('')
 
-  // Only the templates that belong to this kind of chat
-  const shownTemplates = templates.filter((t) => t.type === templateType)
+  // Loads the templates from the server when the box opens (and when the type changes)
+  useEffect(() => {
+    let cancelled = false // ignore the answer if the page changed meanwhile
+
+    async function load() {
+      try {
+        const data = await getTemplates(templateType)
+        if (!cancelled) {
+          setTemplates(data)
+          setTemplatesError('')
+        }
+      } catch (err) {
+        console.error('Templates error:', err)
+        if (!cancelled) setTemplatesError('Could not load templates.')
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [templateType])
+
+  // Paid invoice: hide the "unpaid only" templates
+  const shownTemplates = templates.filter((t) => !(isPaid && UNPAID_ONLY.includes(t.name)))
 
   function send() {
     const clean = text.trim()
@@ -41,6 +71,11 @@ export default function ReplyBox({ onSend, values, templateType = 'quote' }) {
     <div className="shrink-0 border-t border-line bg-white">
       {/* Template chips: clicking one puts its text in the box (you can still edit it) */}
       <div className="flex gap-2 overflow-x-auto px-3 pt-3">
+        {templatesError && (
+          <p role="alert" className="py-3 text-xs font-semibold text-danger">
+            {templatesError}
+          </p>
+        )}
         {shownTemplates.map((t) => (
           <button
             key={t.id}

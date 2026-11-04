@@ -6,7 +6,7 @@ export const templates = [
   {
     id: 1,
     type: 'quote',
-    name: 'Quote follow-up',
+    name: 'Quote follow-up TEST',
     text: 'Hi {customer_name}, just checking you received your quote for {amount}. Let me know if you have any questions.',
   },
   {

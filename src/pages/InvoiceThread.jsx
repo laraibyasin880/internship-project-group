@@ -121,10 +121,10 @@ function ThreadView({ id, thread }) {
               Chase sequence
             </Link>
           </div>
-
           <ReplyBox
             onSend={handleSend}
             templateType="invoice"
+            isPaid={isPaid}
             values={{ customerName: name, amount: invoice.total, dueDate: invoice.dueDate }}
           />
         </div>
