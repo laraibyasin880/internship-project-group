@@ -2,6 +2,7 @@
 // This file creates the Express app, adds helpers and connects the route files.
 import express from 'express'
 import cors from 'cors'
+import { connectDB } from './src/db.js'
 import conversationsRouter from './routes/conversations.js'
 import threadsRouter from './routes/threads.js'
 import invoicesRouter from './routes/invoices.js'
@@ -31,7 +32,10 @@ app.use('/api/invoices', invoicesRouter)
 // Every URL that starts with /api/templates goes to routes/templates.js
 app.use('/api/templates', templatesRouter)
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
+// First connect to MongoDB, and only after that start the server.
+// connectDB() takes a few seconds, so .then() means "run this when it is finished".
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`)
+  })
 })

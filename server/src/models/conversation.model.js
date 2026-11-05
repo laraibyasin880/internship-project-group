@@ -67,4 +67,5 @@ const conversationSchema = new mongoose.Schema(
 )
 
 // MongoDB turns "Conversation" into a collection named "conversations"
-export default mongoose.model('Conversation', conversationSchema)
+// Our own collection name, so we never mix with other students' data
+export default mongoose.model('Conversation', conversationSchema, 'whatsapp_conversations')
